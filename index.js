@@ -14,6 +14,7 @@ class GloBar {
             </div>
         </div>`;
         this.value = null;
+        this.index = null;
         this.bar = null;
         this.barConfig = options.barConfig;
         this.bandwidthList = [];
@@ -32,14 +33,49 @@ class GloBar {
             this.init(options);
         }
     }
+
+    setBarVal (i) {
+        this.bar.value = parseInt(parseInt(this.bar.getAttribute('max')) * (i + 1) / this.bandwidthList.length);
+        this.bar.setAttribute('aria-valuenow', parseInt(this.bandwidthList[i].value));
+        this.bar.setAttribute('aria-valuetext', this.bandwidthList[i].label);
+        this.index = i;
+    }
   
     drawBar () {
         this.dom.insertAdjacentHTML('beforeEnd', this.template);
         this.bar = this.dom.querySelector('.bar');
+
+        const ariaValueMin = this.bandwidthList.reduce((prev, curr) => {
+            if (parseInt(curr.value) < prev) {
+                return parseInt(curr.value);
+            } else {
+                return prev;
+            }
+        }, Infinity);
+
+        const ariaValueMax = this.bandwidthList.reduce((prev, curr) => {
+            if (parseInt(curr.value) > prev) {
+                return parseInt(curr.value);
+            } else {
+                return prev;
+            }
+        }, 0);
+
+        this.bar.setAttribute('aria-valuemin', ariaValueMin);
+        this.bar.setAttribute('aria-valuemax', ariaValueMax);
+
         for (let i = 0; i < this.bandwidthList.length; i ++) {
             if(this.bandwidthList[i].default) {
-                this.bar.value = parseInt(parseInt(this.bar.getAttribute('max')) * (i + 1) / this.bandwidthList.length);
+                this.setBarVal(i);
                 break;
+            }
+        }
+        if (this.index === null) {
+            for (let i = 0; i < this.bandwidthList.length; i ++) {
+                if(!this.bandwidthList[i].unselectable) {
+                    this.setBarVal(i);
+                    break;
+                }
             }
         }
     }
@@ -107,6 +143,7 @@ class GloBar {
         }, Infinity);
 
         this.setValue(this.bandwidthList[pinIndex].value);
+        this.setBarVal(pinIndex);
 
         return Number.parseFloat((pinIndex + 1) / sections).toPrecision(10);
     }
@@ -122,12 +159,44 @@ class GloBar {
         });
     }
 
+    handleKeyboard () {
+        this.bar.addEventListener('keydown', (e) => {
+            if (e.keyCode != 37 && e.keyCode != 39) {
+                return false;
+            }
+            if (e.keyCode == 37) {
+                let i = this.index - 1;
+                while (i >= 0) {
+                    if (this.bandwidthList[i].unselectable) {
+                        i = i - 1;
+                        continue;
+                    } else {
+                        this.setBarVal(i);
+                        break;
+                    }
+                }
+            } else if (e.keyCode == 39) {
+                let i = this.index + 1;
+                while (i < this.bandwidthList.length) {
+                    if (this.bandwidthList[i].unselectable) {
+                        i = i + 1;
+                        continue;
+                    } else {
+                        this.setBarVal(i);
+                        break;
+                    }
+                }
+            }
+        });
+    }
+
     init (options) {
         this.drawBar(options);
         this.drawLabels();
         this.drawColors();
         this.drawSegments();
         this.handleChange();
+        this.handleKeyboard();
     }
 }
 const gloBar = new GloBar({
