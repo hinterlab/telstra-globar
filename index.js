@@ -9,7 +9,7 @@ class GloBar {
         `<div class="globarWrapper">
             <datalist class="labels">
             </datalist>
-            <input type="range" list="labels" class="bar" min="0" max="5000" step="1" value="0" />
+            <input type="range" list="labels" class="bar" min="0" max="1000000" step="1" value="0" />
             <div class="segments">
             </div>
         </div>`;
@@ -90,17 +90,26 @@ class GloBar {
     }
 
     drawColors () {
-        let bg = this.barConfig[0].color + ' 0%,';
+        let radialBg = '';
         let length = 0;
         for (let i = 0; i < this.barConfig.length; i ++) {
-            length += this.barConfig[i].group.length;
-            bg += this.barConfig[i].color + ' ' + Number.parseFloat(length / this.bandwidthList.length).toPrecision(10) * 100 + '%,';
             if (i != this.barConfig.length - 1) {
-                bg += this.barConfig[i + 1].color + ' ' + Number.parseFloat(length / this.bandwidthList.length).toPrecision(10) * 100 + '%,';
+                length += this.barConfig[i].group.length;
+                radialBg += 'radial-gradient(' + this.bar.clientHeight + 'px circle at ' + Number.parseFloat(length / this.bandwidthList.length).toPrecision(10) * 100 + '% ' + (this.bar.clientHeight / 2) + 'px, ' + this.barConfig[i].color + ' 50%, transparent 51%),';
             }
         }
-        bg = 'linear-gradient(90deg, ' + bg.slice(0, -1) + ')';
-        this.bar.style.backgroundImage = bg;
+
+        let linearBg = this.barConfig[0].color + ' 0%,';
+        length = 0;
+        for (let i = 0; i < this.barConfig.length; i ++) {
+            length += this.barConfig[i].group.length;
+            linearBg += this.barConfig[i].color + ' ' + Number.parseFloat(length / this.bandwidthList.length).toPrecision(10) * 100 + '%,';
+            if (i != this.barConfig.length - 1) {
+                linearBg += this.barConfig[i + 1].color + ' ' + Number.parseFloat(length / this.bandwidthList.length).toPrecision(10) * 100 + '%,';
+            }
+        }
+        linearBg = 'linear-gradient(90deg, ' + linearBg.slice(0, -1) + ')';
+        this.bar.style.backgroundImage = radialBg + linearBg;
     }
 
     drawSegments () {
@@ -161,10 +170,7 @@ class GloBar {
 
     handleKeyboard () {
         this.bar.addEventListener('keydown', (e) => {
-            if (e.keyCode != 37 && e.keyCode != 39) {
-                return false;
-            }
-            if (e.keyCode == 37) {
+            if (e.key == 'ArrowLeft') {
                 let i = this.index - 1;
                 while (i >= 0) {
                     if (this.bandwidthList[i].unselectable) {
@@ -175,7 +181,7 @@ class GloBar {
                         break;
                     }
                 }
-            } else if (e.keyCode == 39) {
+            } else if (e.key == 'ArrowRight') {
                 let i = this.index + 1;
                 while (i < this.bandwidthList.length) {
                     if (this.bandwidthList[i].unselectable) {
